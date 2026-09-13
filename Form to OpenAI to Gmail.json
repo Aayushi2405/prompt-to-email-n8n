@@ -1,0 +1,188 @@
+{
+  "name": "Form to OpenAI to Gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Email Writer",
+        "formDescription": "Enter a recipient and describe the email you want written.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Email Address",
+              "fieldName": "email_address",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Recipient's Name",
+              "fieldName": "recipient_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Your Name (for sign-off)",
+              "fieldName": "sender_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Message Prompt",
+              "fieldName": "message_prompt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5fd0536e-9472-4d6b-abdf-bfda298a4d84",
+      "name": "On Form Submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "7715019f-b367-4dfc-b5c7-db257253d9b2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email-format",
+              "leftValue": "={{ $json.email_address }}",
+              "rightValue": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e3afc69c-7286-4c23-9190-f356ad355ff9",
+      "name": "Valid Email Format",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a professional email writing assistant. Write a clear, polished, professional email based on the user request. Return only the email body text, with no subject line and no extra commentary."
+            },
+            {
+              "content": "=Write the email to {{ $json.recipient_name }}, addressing them by name in the greeting. Sign off with a professional closing (e.g. \"Best regards,\") followed by {{ $json.sender_name }}.\n\nRequest: {{ $json.message_prompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "d300fcc7-7a29-404d-9fcf-9d6adcc45ceb",
+      "name": "Write Email",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On Form Submission').item.json.email_address }}",
+        "subject": "Your requested email",
+        "emailType": "text",
+        "message": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "id": "8f48aa3b-dac3-448f-b63c-568fe13a0490",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        0
+      ],
+      "webhookId": "2cc0a1ef-33b5-4284-9d6b-8ea95c7df771",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hItmRyrpedVVKShz",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On Form Submission": {
+      "main": [
+        [
+          {
+            "node": "Valid Email Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Email Format": {
+      "main": [
+        [
+          {
+            "node": "Write Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "081fba75-a2d9-40cc-b5ce-4510e068cc5b",
+  "meta": {
+    "instanceId": "60c4cc15c05a5d2e3281bde7f7a890edffee556a92846da10e6e9070eaab67d9"
+  },
+  "nodeGroups": [],
+  "id": "SAhIVwZZqTDiUDop",
+  "tags": []
+}
